@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36915.13 d17.14
+VisualStudioVersion = 17.14.36915.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Slack IOC Defanger", "Slack IOC Defanger\Slack IOC Defanger.vcxproj", "{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "SlackDefangerSetup", "SlackDefangerSetup\SlackDefangerSetup.vdproj", "{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|x64.Build.0 = Release|x64
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|x86.ActiveCfg = Release|Win32
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|x86.Build.0 = Release|Win32
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Debug|x64.ActiveCfg = Debug
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Debug|x86.ActiveCfg = Debug
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Release|x64.ActiveCfg = Release
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

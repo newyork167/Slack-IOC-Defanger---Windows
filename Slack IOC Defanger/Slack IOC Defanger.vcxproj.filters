@@ -45,5 +45,8 @@
     <Image Include="Slack IOC Defanger.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="slack_defanger.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

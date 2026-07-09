@@ -5,6 +5,7 @@
 #include <vector>
 #include <thread>
 #include <chrono>
+#include "resource.h"
 
 #pragma comment(lib, "psapi.lib")
 
@@ -208,7 +209,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     nid.uCallbackMessage = WM_TRAYICON;
     // Load a default Windows icon (shield/application) since we don't have a custom .ico file linked
-    nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
     wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
 
     Shell_NotifyIconW(NIM_ADD, &nid);
