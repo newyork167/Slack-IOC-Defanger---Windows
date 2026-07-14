@@ -28,6 +28,7 @@ $RECYCLE.BIN/
 *.v15.suo
 *.v16.suo
 *.v17.suo
+*.aps
 
 # ==================================
 # Build Outputs & Intermediate Files
