@@ -5,9 +5,7 @@
 #include <vector>
 #include <thread>
 #include <chrono>
-
-// If you added a custom icon earlier using Resource.h, uncomment the line below:
-// #include "resource.h"
+#include "resource.h"
 
 #pragma comment(lib, "psapi.lib")
 
@@ -16,12 +14,40 @@
 #define ID_TRAY_EXIT 1001
 #define ID_TRAY_TOGGLE 1002
 
-// Global variables
 HHOOK hKeyboardHook = nullptr;
 NOTIFYICONDATAW nid = {};
-bool isDefangingEnabled = true; // 1. Global state toggle
+bool isDefangingEnabled = true;
 
-// --- Defanging Logic ---
+static const wchar_t* kRegPath = L"Software\\SlackIOCDefanger";
+static const wchar_t* kValueName = L"DefangEnabled";
+
+bool LoadDefangEnabled()
+{
+    DWORD data = 1; // default enabled
+    DWORD size = sizeof(data);
+    DWORD type = REG_DWORD;
+
+    if (RegGetValueW(HKEY_CURRENT_USER, kRegPath, kValueName,
+        RRF_RT_REG_DWORD, &type, &data, &size) == ERROR_SUCCESS)
+    {
+        return data != 0;
+    }
+    return true;
+}
+
+void SaveDefangEnabled(bool enabled)
+{
+    HKEY hKey{};
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, kRegPath, 0, nullptr, 0,
+        KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS)
+    {
+        DWORD data = enabled ? 1u : 0u;
+        RegSetValueExW(hKey, kValueName, 0, REG_DWORD,
+            reinterpret_cast<const BYTE*>(&data), sizeof(data));
+        RegCloseKey(hKey);
+    }
+}
+
 std::wstring defangURLs(const std::wstring& text) {
     std::wregex urlRegex(
         LR"((?:https?://|www\.)[^\s]+|\b(?:\d{1,3}\.){3}\d{1,3}\b|\b[a-zA-Z0-9.-]+\.(?!(?:exe|dll|bin|sys|elf|sh|bat|txt|log|csv|zip|rar|tar|gz|7z|pdf|docx?|xlsx?|py|js|ps1|apk|msi)\b)[a-zA-Z]{2,15}\b(?:/[^\s]*)?)",
@@ -50,7 +76,6 @@ std::wstring defangURLs(const std::wstring& text) {
     return output;
 }
 
-// --- Active Window Checking ---
 bool isSlackForeground() {
     HWND hwnd = GetForegroundWindow();
     if (!hwnd) return false;
@@ -81,7 +106,6 @@ bool isSlackForeground() {
     return isSlack;
 }
 
-// --- Clipboard Manipulation ---
 bool defangClipboard() {
     if (!OpenClipboard(nullptr)) return false;
 
@@ -120,9 +144,7 @@ bool defangClipboard() {
     return false;
 }
 
-// --- Global Hook Callback ---
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    // 2. Early exit if the feature is toggled off from the tray menu
     if (!isDefangingEnabled) {
         return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
     }
@@ -145,7 +167,6 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
 }
 
-// --- Hidden Window Procedure for Tray Messages ---
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_TRAYICON:
@@ -169,12 +190,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         break;
 
     case WM_COMMAND:
-        // Handle menu clicks
+        // Handle enable/disable menu clicks
         if (LOWORD(wParam) == ID_TRAY_TOGGLE) {
-            // 4. Toggle the boolean state
             isDefangingEnabled = !isDefangingEnabled;
 
-            // 5. Update the hover tooltip on the tray icon to reflect the new state
             if (isDefangingEnabled) {
                 wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
             }
@@ -182,6 +201,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                 wcscpy_s(nid.szTip, L"Slack Defanger (Paused)");
             }
             Shell_NotifyIconW(NIM_MODIFY, &nid);
+            SaveDefangEnabled(isDefangingEnabled);
         }
         else if (LOWORD(wParam) == ID_TRAY_EXIT) {
             PostQuitMessage(0);
@@ -207,6 +227,14 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 
     const wchar_t CLASS_NAME[] = L"DefangerHiddenWindowClass";
 
+	isDefangingEnabled = LoadDefangEnabled();
+    if (isDefangingEnabled) {
+        wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
+    }
+    else {
+        wcscpy_s(nid.szTip, L"Slack Defanger (Paused)");
+    }
+
     WNDCLASSW wc = {};
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
@@ -230,9 +258,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     nid.uCallbackMessage = WM_TRAYICON;
 
-    // If using a custom icon from earlier, use: LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
-    nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-    wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
+    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
 
     Shell_NotifyIconW(NIM_ADD, &nid);
 
