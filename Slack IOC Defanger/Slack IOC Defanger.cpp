@@ -9,15 +9,45 @@
 
 #pragma comment(lib, "psapi.lib")
 
-// --- Constants for the Tray Icon ---
+// --- Constants for the Tray Icon & Menu ---
 #define WM_TRAYICON (WM_USER + 1)
 #define ID_TRAY_EXIT 1001
+#define ID_TRAY_TOGGLE 1002
 
-// Global variables for hook and tray
 HHOOK hKeyboardHook = nullptr;
 NOTIFYICONDATAW nid = {};
+bool isDefangingEnabled = true;
 
-// --- Defanging Logic ---
+static const wchar_t* kRegPath = L"Software\\SlackIOCDefanger";
+static const wchar_t* kValueName = L"DefangEnabled";
+
+bool LoadDefangEnabled()
+{
+    DWORD data = 1; // default enabled
+    DWORD size = sizeof(data);
+    DWORD type = REG_DWORD;
+
+    if (RegGetValueW(HKEY_CURRENT_USER, kRegPath, kValueName,
+        RRF_RT_REG_DWORD, &type, &data, &size) == ERROR_SUCCESS)
+    {
+        return data != 0;
+    }
+    return true;
+}
+
+void SaveDefangEnabled(bool enabled)
+{
+    HKEY hKey{};
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, kRegPath, 0, nullptr, 0,
+        KEY_WRITE, nullptr, &hKey, nullptr) == ERROR_SUCCESS)
+    {
+        DWORD data = enabled ? 1u : 0u;
+        RegSetValueExW(hKey, kValueName, 0, REG_DWORD,
+            reinterpret_cast<const BYTE*>(&data), sizeof(data));
+        RegCloseKey(hKey);
+    }
+}
+
 std::wstring defangURLs(const std::wstring& text) {
     std::wregex urlRegex(
         LR"((?:https?://|www\.)[^\s]+|\b(?:\d{1,3}\.){3}\d{1,3}\b|\b[a-zA-Z0-9.-]+\.(?!(?:exe|dll|bin|sys|elf|sh|bat|txt|log|csv|zip|rar|tar|gz|7z|pdf|docx?|xlsx?|py|js|ps1|apk|msi)\b)[a-zA-Z]{2,15}\b(?:/[^\s]*)?)",
@@ -46,7 +76,6 @@ std::wstring defangURLs(const std::wstring& text) {
     return output;
 }
 
-// --- Active Window Checking ---
 bool isSlackForeground() {
     HWND hwnd = GetForegroundWindow();
     if (!hwnd) return false;
@@ -77,7 +106,6 @@ bool isSlackForeground() {
     return isSlack;
 }
 
-// --- Clipboard Manipulation ---
 bool defangClipboard() {
     if (!OpenClipboard(nullptr)) return false;
 
@@ -116,8 +144,11 @@ bool defangClipboard() {
     return false;
 }
 
-// --- Global Hook Callback ---
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (!isDefangingEnabled) {
+        return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
+    }
+
     if (nCode == HC_ACTION) {
         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
             KBDLLHOOKSTRUCT* pkbhs = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
@@ -136,7 +167,6 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
 }
 
-// --- Hidden Window Procedure for Tray Messages ---
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_TRAYICON:
@@ -146,20 +176,34 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             GetCursorPos(&pt);
 
             HMENU hMenu = CreatePopupMenu();
-            AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT, L"Exit Defanger");
 
-            // SetForegroundWindow is a known requirement in Win32 to ensure 
-            // the popup menu closes if you click outside of it.
+            // 3. Build the toggle menu item with dynamic checked/unchecked state
+            UINT checkFlag = isDefangingEnabled ? MF_CHECKED : MF_UNCHECKED;
+            AppendMenuW(hMenu, MF_STRING | checkFlag, ID_TRAY_TOGGLE, L"Defang Slack Pastes");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT, L"Exit");
+
             SetForegroundWindow(hwnd);
-
             TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hwnd, NULL);
             DestroyMenu(hMenu);
         }
         break;
 
     case WM_COMMAND:
-        // Handle the "Exit" click from the menu
-        if (LOWORD(wParam) == ID_TRAY_EXIT) {
+        // Handle enable/disable menu clicks
+        if (LOWORD(wParam) == ID_TRAY_TOGGLE) {
+            isDefangingEnabled = !isDefangingEnabled;
+
+            if (isDefangingEnabled) {
+                wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
+            }
+            else {
+                wcscpy_s(nid.szTip, L"Slack Defanger (Paused)");
+            }
+            Shell_NotifyIconW(NIM_MODIFY, &nid);
+            SaveDefangEnabled(isDefangingEnabled);
+        }
+        else if (LOWORD(wParam) == ID_TRAY_EXIT) {
             PostQuitMessage(0);
         }
         break;
@@ -181,8 +225,15 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
         return 0;
     }
 
-    // 1. Register the Hidden Window Class
     const wchar_t CLASS_NAME[] = L"DefangerHiddenWindowClass";
+
+	isDefangingEnabled = LoadDefangEnabled();
+    if (isDefangingEnabled) {
+        wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
+    }
+    else {
+        wcscpy_s(nid.szTip, L"Slack Defanger (Paused)");
+    }
 
     WNDCLASSW wc = {};
     wc.lpfnWndProc = WindowProc;
@@ -191,7 +242,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 
     RegisterClassW(&wc);
 
-    // 2. Create the Hidden Window
     HWND hwnd = CreateWindowExW(
         0, CLASS_NAME, L"Slack Defanger", 0,
         0, 0, 0, 0,
@@ -202,29 +252,24 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
         return 0;
     }
 
-    // 3. Setup the System Tray Icon
     nid.cbSize = sizeof(NOTIFYICONDATAW);
     nid.hWnd = hwnd;
     nid.uID = 1;
     nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     nid.uCallbackMessage = WM_TRAYICON;
-    // Load a default Windows icon (shield/application) since we don't have a custom .ico file linked
+
     nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
-    wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
 
     Shell_NotifyIconW(NIM_ADD, &nid);
 
-    // 4. Install the keyboard hook
     hKeyboardHook = SetWindowsHookExW(WH_KEYBOARD_LL, KeyboardProc, hInstance, 0);
 
-    // 5. Run the Message Loop
     MSG msg;
     while (GetMessageW(&msg, NULL, 0, 0) > 0) {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
 
-    // 6. Cleanup on Exit
     Shell_NotifyIconW(NIM_DELETE, &nid);
     UnhookWindowsHookEx(hKeyboardHook);
 
