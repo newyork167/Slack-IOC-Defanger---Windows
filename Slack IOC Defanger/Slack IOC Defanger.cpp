@@ -5,17 +5,21 @@
 #include <vector>
 #include <thread>
 #include <chrono>
-#include "resource.h"
+
+// If you added a custom icon earlier using Resource.h, uncomment the line below:
+// #include "resource.h"
 
 #pragma comment(lib, "psapi.lib")
 
-// --- Constants for the Tray Icon ---
+// --- Constants for the Tray Icon & Menu ---
 #define WM_TRAYICON (WM_USER + 1)
 #define ID_TRAY_EXIT 1001
+#define ID_TRAY_TOGGLE 1002
 
-// Global variables for hook and tray
+// Global variables
 HHOOK hKeyboardHook = nullptr;
 NOTIFYICONDATAW nid = {};
+bool isDefangingEnabled = true; // 1. Global state toggle
 
 // --- Defanging Logic ---
 std::wstring defangURLs(const std::wstring& text) {
@@ -118,6 +122,11 @@ bool defangClipboard() {
 
 // --- Global Hook Callback ---
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    // 2. Early exit if the feature is toggled off from the tray menu
+    if (!isDefangingEnabled) {
+        return CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
+    }
+
     if (nCode == HC_ACTION) {
         if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
             KBDLLHOOKSTRUCT* pkbhs = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
@@ -146,20 +155,35 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             GetCursorPos(&pt);
 
             HMENU hMenu = CreatePopupMenu();
-            AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT, L"Exit Defanger");
 
-            // SetForegroundWindow is a known requirement in Win32 to ensure 
-            // the popup menu closes if you click outside of it.
+            // 3. Build the toggle menu item with dynamic checked/unchecked state
+            UINT checkFlag = isDefangingEnabled ? MF_CHECKED : MF_UNCHECKED;
+            AppendMenuW(hMenu, MF_STRING | checkFlag, ID_TRAY_TOGGLE, L"Defang Slack Pastes");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT, L"Exit");
+
             SetForegroundWindow(hwnd);
-
             TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hwnd, NULL);
             DestroyMenu(hMenu);
         }
         break;
 
     case WM_COMMAND:
-        // Handle the "Exit" click from the menu
-        if (LOWORD(wParam) == ID_TRAY_EXIT) {
+        // Handle menu clicks
+        if (LOWORD(wParam) == ID_TRAY_TOGGLE) {
+            // 4. Toggle the boolean state
+            isDefangingEnabled = !isDefangingEnabled;
+
+            // 5. Update the hover tooltip on the tray icon to reflect the new state
+            if (isDefangingEnabled) {
+                wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
+            }
+            else {
+                wcscpy_s(nid.szTip, L"Slack Defanger (Paused)");
+            }
+            Shell_NotifyIconW(NIM_MODIFY, &nid);
+        }
+        else if (LOWORD(wParam) == ID_TRAY_EXIT) {
             PostQuitMessage(0);
         }
         break;
@@ -181,7 +205,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
         return 0;
     }
 
-    // 1. Register the Hidden Window Class
     const wchar_t CLASS_NAME[] = L"DefangerHiddenWindowClass";
 
     WNDCLASSW wc = {};
@@ -191,7 +214,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 
     RegisterClassW(&wc);
 
-    // 2. Create the Hidden Window
     HWND hwnd = CreateWindowExW(
         0, CLASS_NAME, L"Slack Defanger", 0,
         0, 0, 0, 0,
@@ -202,29 +224,26 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
         return 0;
     }
 
-    // 3. Setup the System Tray Icon
     nid.cbSize = sizeof(NOTIFYICONDATAW);
     nid.hWnd = hwnd;
     nid.uID = 1;
     nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     nid.uCallbackMessage = WM_TRAYICON;
-    // Load a default Windows icon (shield/application) since we don't have a custom .ico file linked
-    nid.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+
+    // If using a custom icon from earlier, use: LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
     wcscpy_s(nid.szTip, L"Slack Defanger (Active)");
 
     Shell_NotifyIconW(NIM_ADD, &nid);
 
-    // 4. Install the keyboard hook
     hKeyboardHook = SetWindowsHookExW(WH_KEYBOARD_LL, KeyboardProc, hInstance, 0);
 
-    // 5. Run the Message Loop
     MSG msg;
     while (GetMessageW(&msg, NULL, 0, 0) > 0) {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
 
-    // 6. Cleanup on Exit
     Shell_NotifyIconW(NIM_DELETE, &nid);
     UnhookWindowsHookEx(hKeyboardHook);
 
