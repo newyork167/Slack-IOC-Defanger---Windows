@@ -7,26 +7,48 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Slack IOC Defanger", "Slack
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "SlackDefangerSetup", "SlackDefangerSetup\SlackDefangerSetup.vdproj", "{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlackIOCDefanger.InstallerBuild", "SlackIOCDefanger.InstallerBuild.csproj", "{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Debug|Any CPU = Debug|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Debug|x64.ActiveCfg = Debug|x64
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Debug|x64.Build.0 = Debug|x64
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Debug|x86.ActiveCfg = Debug|Win32
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Debug|x86.Build.0 = Debug|Win32
+		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Debug|Any CPU.Build.0 = Debug|x64
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|x64.ActiveCfg = Release|x64
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|x64.Build.0 = Release|x64
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|x86.ActiveCfg = Release|Win32
 		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|x86.Build.0 = Release|Win32
-		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Debug|x64.ActiveCfg = Debug
-		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Debug|x86.ActiveCfg = Debug
-		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Release|x64.ActiveCfg = Release
-		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Release|x86.ActiveCfg = Release
+		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|Any CPU.ActiveCfg = Release|x64
+		{81DA2CA9-36BF-4420-AC55-CBA8692B7D83}.Release|Any CPU.Build.0 = Release|x64
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Debug|x64.ActiveCfg = Debug|x64
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Debug|x86.ActiveCfg = Debug|x86
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Release|x64.ActiveCfg = Release|x64
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Release|x86.ActiveCfg = Release|x86
+		{0493CE9B-D0C2-EC8C-35C8-C7C74665E07D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Debug|x64.Build.0 = Debug|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Debug|x86.Build.0 = Debug|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Release|x64.ActiveCfg = Release|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Release|x64.Build.0 = Release|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Release|x86.ActiveCfg = Release|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Release|x86.Build.0 = Release|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE06D29C-9EEC-44E3-A9F3-788AE91AAA1A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

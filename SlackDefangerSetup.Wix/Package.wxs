@@ -1,0 +1,59 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+	 xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package
+	Name="Slack Defanger"
+	Manufacturer="Ron Pwnson"
+	Version="1.0.7"
+	UpgradeCode="{88A2C731-1DD3-4DA2-B940-C10F2466EB32}"
+	Scope="perMachine"
+	Compressed="yes">
+
+	<MajorUpgrade
+	  AllowSameVersionUpgrades="yes"
+	  DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+	<MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+	<Icon Id="AppIcon" SourceFile="..\Slack IOC Defanger\slack_defanger.ico" />
+	<Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+	<StandardDirectory Id="ProgramFiles64Folder">
+	  <Directory Id="INSTALLFOLDER" Name="Slack Defanger" />
+	</StandardDirectory>
+
+	<StandardDirectory Id="ProgramMenuFolder">
+	  <Directory Id="ProgramMenuDir" Name="Slack Defanger" />
+	</StandardDirectory>
+
+	<util:CloseApplication
+	  Id="CloseSlackDefanger"
+	  Target="[INSTALLFOLDER]Slack IOC Defanger.exe"
+	  Description="Closing Slack Defanger"
+	  CloseMessage="yes"
+	  ElevatedCloseMessage="yes"
+	  RebootPrompt="no"
+	  TerminateProcess="1"
+	  Timeout="5" />
+
+	<Feature Id="MainFeature" Title="Slack Defanger" Level="1">
+	  <ComponentRef Id="MainExecutableComponent" />
+	  <ComponentRef Id="StartMenuShortcutComponent" />
+	</Feature>
+
+	<Component Id="MainExecutableComponent" Directory="INSTALLFOLDER" Guid="*">
+	  <File Id="SlackDefangerExe" Source="..\x64\Release\Slack IOC Defanger.exe" KeyPath="yes" />
+	</Component>
+
+	<Component Id="StartMenuShortcutComponent" Directory="ProgramMenuDir" Guid="*">
+	  <Shortcut
+		Id="StartMenuShortcut"
+		Name="Slack Defanger"
+		Target="[INSTALLFOLDER]Slack IOC Defanger.exe"
+		WorkingDirectory="INSTALLFOLDER"
+		Icon="AppIcon"
+		IconIndex="0" />
+	  <RemoveFolder Id="ProgramMenuDirCleanup" On="uninstall" />
+	  <RegistryValue Root="HKCU" Key="Software\Ron Pwnson\Slack Defanger" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+	</Component>
+  </Package>
+</Wix>

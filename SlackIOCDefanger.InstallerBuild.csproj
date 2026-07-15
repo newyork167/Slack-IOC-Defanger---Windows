@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFramework>net8.0</TargetFramework>
+	<EnableDefaultItems>false</EnableDefaultItems>
+	<DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+	<AppConfiguration Condition="'$(AppConfiguration)' == '' and '$(Configuration)' != ''">$(Configuration)</AppConfiguration>
+	<AppConfiguration Condition="'$(AppConfiguration)' == ''">Release</AppConfiguration>
+	<AppPlatform Condition="'$(AppPlatform)' == '' and '$(Platform)' != '' and '$(Platform)' != 'Any CPU'">$(Platform)</AppPlatform>
+	<AppPlatform Condition="'$(AppPlatform)' == ''">x64</AppPlatform>
+	<AppProject>$(MSBuildThisFileDirectory)Slack IOC Defanger\Slack IOC Defanger.vcxproj</AppProject>
+	<WixProject>$(MSBuildThisFileDirectory)SlackDefangerSetup.Wix\SlackDefangerSetup.Wix.wixproj</WixProject>
+  </PropertyGroup>
+
+  <Target Name="BuildInstaller" AfterTargets="Build">
+	<MSBuild Projects="$(AppProject)"
+			 Targets="Build"
+			 Properties="Configuration=$(AppConfiguration);Platform=$(AppPlatform)" />
+	<Exec Command="dotnet build &quot;$(WixProject)&quot; -c $(AppConfiguration)" />
+  </Target>
+
+  <Target Name="CleanInstaller" AfterTargets="Clean">
+	<MSBuild Projects="$(AppProject)"
+			 Targets="Clean"
+			 Properties="Configuration=$(AppConfiguration);Platform=$(AppPlatform)" />
+	<Exec Command="dotnet clean &quot;$(WixProject)&quot; -c $(AppConfiguration)" />
+  </Target>
+</Project>
